@@ -1,2 +1,6 @@
 # Deep-Autoencoder-Clustering-of-Anthropogenic-Seismicity
 Code and outputs associated with my research study
+
+ABSTRACT
+
+Hydraulic fracturing is one of many methods used around the world to aid in the extraction of oil. Even considering recent advancements in the space, hydraulic fracturing can still be inefficient and even dangerous at times due to volatile seismic activity. This study used data taken from a fracturing site in Western Alberta to train and cluster similar seismic events using a machine learning algorithm. By the end of the study, the algorithm was able to successfully reconstruct seismic waves and cluster them based on characteristics chosen by the algorithm. Potential implications of this study in the hydraulic fracturing process include early detection of dangerous seismic events, as well as faster pinpointing of relevant seismic events to increase efficiency in oil extraction.
