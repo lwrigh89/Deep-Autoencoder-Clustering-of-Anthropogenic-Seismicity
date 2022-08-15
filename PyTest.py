@@ -8,7 +8,6 @@ import torch.nn.functional
 from torch.utils.data.sampler import SubsetRandomSampler
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
-import seaborn as sns
 from sklearn.manifold import TSNE
 import random
 import os
@@ -17,24 +16,12 @@ import pandas as pd
 import plotly.express as px
 from scipy.signal import stft
 
-sns.set_style('darkgrid')
-sns.set_palette('muted')
-
 
 def do_stft(x, fs = 125.0, nperseg = 96, wf_length=1251):
     x = np.pad(x, (0, wf_length - x.size), 'constant')
     f, t, Zxx = stft(x, fs, nperseg=nperseg)
     Zxx = np.abs(Zxx)
     return Zxx/np.max(np.max(Zxx))
-
-# flamo = obs.read('/loggerhead/coke/wf_Tony/trim/15_62.5_10s/1143/DH1/event1000.mseed')
-# fam = flamo[0].data
-# freq = do_stft(fam)
-# fig = plt.plot(fam)
-# plt.show()
-# fig2 = plt.pcolormesh(freq)
-# plt.show()
-# sys.exit()
 
 
 if len(os.listdir('/loggerhead/lwrigh89/Numpy Array')) == 0:
@@ -91,95 +78,53 @@ else:
             print('number of stations loaded: ' + str(iterator))
 
         iterator += 1
-        # waveforms.append(np.load('/loggerhead/lwrigh89/Numpy Array/' + str(dirs)))
-    # waveforms = np.array(waveforms)
+        
     print(waveforms.shape)
 
 
 
-# wave_arr = np.stack(waveforms, axis=0)
-# print(wave_arr.shape)
-# wave_arr = np.array(waves)
 train_arr, test_arr = sklearn.model_selection.train_test_split(waveforms, train_size=0.9)
 
 
-
-# print(wave_arr.size)
-# wave_torch = torch.tensor(waveforms, requires_grad=True).clone().float()
 train_torch = torch.tensor(train_arr, requires_grad=True).clone().float()
 test_torch = torch.tensor(test_arr, requires_grad=True).clone().float()
 
-
-
-# print(wave_torch.shape)
-# print(train_torch.shape)
-# train_waves = train_torch.unsqueeze_(1)
-# test_waves = test_torch.unsqueeze_(1)
-# wave_torch_best = wave_torch.unsqueeze_(1)
-# print(wave_torch_best.shape)
 train_waves = train_torch
 test_waves = test_torch
 print(train_waves.shape)
 print(test_waves.shape)
-# train_size = int(0.95 * len(wave_torch_best))
-# test_size = len(wave_torch_best) - train_size
-# train_waves, test_waves = torch.utils.data.random_split(wave_torch_best, [train_size, test_size])
 
-# rand_num = random.randint(0, 3126)
-# tester = wave_torch_best.cpu().detach().numpy()
-# print(tester.shape)
-# print(tester[rand_num, 0, :])
-# plt.plot(tester[rand_num, 0, :])
-# plt.autoscale(plt.plot(tester[rand_num]))
-# plt.show()
 
 k = 7
 p = k//2
 
 
-# def do_stft(x, fs = 125.0, nperseg = 96, wf_length=1251):
-#     x = np.pad(x, (0, wf_length - x.size), 'constant')
-#     f, t, Zxx = signal.stft(x, fs,nperseg=nperseg)
-#     Zxx = np.abs(Zxx)
-#     return Zxx/np.max(np.max(Zxx))
-
 use_decoder = True
 
-# 1, 1, 49, 28
+
 class AutoEncoder(nn.Module):
     def __init__(self):
         #  make sure to always initialize the super class when using outside methods
         super().__init__()
 
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 8, kernel_size=k, padding=p), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(8, 16, kernel_size=k, padding=p), nn.ReLU(), nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(16, 32, kernel_size=k, padding=p), nn.ReLU()
+            nn.Conv2d(3, 8, kernel_size=k, padding=p), nn.LeakyReLU(), nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(8, 16, kernel_size=k, padding=p), nn.LeakyReLU(), nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(16, 32, kernel_size=k, padding=p), nn.LeakyReLU()
         )
 
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2), nn.ReLU(),
-            nn.ConvTranspose2d(16, 8, kernel_size=2, stride=2), nn.ReLU(),
-            nn.Conv2d(8, 3, kernel_size=(2, 3), padding=1), nn.Sigmoid()
+            nn.ConvTranspose2d(32, 16, kernel_size=2, stride=2), nn.LeakyReLU(),
+            nn.ConvTranspose2d(16, 8, kernel_size=2, stride=2), nn.LeakyReLU(),
+            nn.Conv2d(8, 3, kernel_size=(2, 3), padding=1), nn.Tanh()
         )
 
     def forward(self, x):
         x = self.encoder(x)
-        # x = torch.reshape(x, (1, 128, 7, 3))
-        # print(x.shape)
         if use_decoder:
             x = self.decoder(x)
         return x
 
-
-# trying to fix error when running BCE loss
-# def force_cudnn_initialization():
-#     s = 32
-#     dev = torch.device('cuda')
-#     torch.nn.functional.conv2d(torch.zeros(s, s, s, s, device=dev), torch.zeros(s, s, s, s, device=dev))
-
-
-# force_cudnn_initialization()
 
 #   if directory is empty, create new model, else use model from directory
 new_model = True
@@ -190,13 +135,11 @@ else:
     model.load_state_dict(torch.load('/loggerhead/lwrigh89/Model/newmodel.pt'))
     model.eval()
     new_model = False
-#   print(model)
 
-# Set the random seed for reproducible results
-# torch.manual_seed(0)
+
+
 loss_function_MSE = nn.MSELoss()
-loss_function_KLD = nn.KLDivLoss()
-loss_function_BCE = nn.BCELoss()
+
 
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 
@@ -221,8 +164,6 @@ def train_epoch(model, device, loss_fn, optimizer):
         wave = wave.to(device)
         output_thing = model(wave)
         loss = loss_fn((output_thing), (wave))
-        # loss = loss_fn(nn.functional.log_softmax(output_thing), nn.functional.softmax(wave))
-        # loss = loss_fn(nn.functional.log_softmax(output_thing), wave)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -259,8 +200,7 @@ def test_epoch(model, device, loss_fn):
         conc_label = torch.cat(conc_label)
         # Evaluate global loss
         val_loss = loss_fn((conc_out), (conc_label))
-        # val_loss = loss_fn(nn.functional.log_softmax(conc_out), nn.functional.softmax(conc_label))
-        # val_loss = loss_fn(nn.functional.log_softmax(conc_out), conc_label)
+        
     return val_loss.data
 
 
@@ -285,33 +225,23 @@ def plot_wave(arr, index, cluster_num):
 def plot_outputs(model):
     model.eval()
     rand_num = random.randint(0, 4082)
-    # rand_num = 0
     wave_torch_best = torch.from_numpy(waveforms[rand_num, :, :, :]).float().unsqueeze_(0)
-    # reconstructed = wave_torch_best[rand_num].to(device)
     reconstructed = wave_torch_best.to(device)
-    # reconstructed.unsqueeze_(0)
     reconstructed = model(reconstructed)
     new_numpy = reconstructed.detach().cpu().numpy()
     og = wave_torch_best.detach().cpu().numpy()
-    # plt.plot(og[0, :])
     fig, (ax1, ax2, ax3) = plt.subplots(3)
     fig.suptitle('DH1, DH2, DH3')
     ax1.pcolormesh(og[0, 0, :])
     ax2.pcolormesh(og[0, 1, :])
     ax3.pcolormesh(og[0, 2, :])
     fig.savefig('/loggerhead/lwrigh89/Plots/Comparing Plots/original.png')
-    # plt.savefig('/loggerhead/lwrigh89/Plots/Comparing Plots/original.png')
-    # plt.plot(new_numpy[0, :])
     fig, (ax1, ax2, ax3) = plt.subplots(3)
     fig.suptitle('DH1, DH2, DH3')
     ax1.pcolormesh(new_numpy[0, 0, :])
     ax2.pcolormesh(new_numpy[0, 1, :])
     ax3.pcolormesh(new_numpy[0, 2, :])
     fig.savefig('/loggerhead/lwrigh89/Plots/Comparing Plots/reconstructed.png')
-    # fig, axs = plt.subplots(2)
-    # axs[0].pcolormesh(og[:])
-    # axs[1].pcolormesh(new_numpy[:])
-    # plt.savefig('/loggerhead/lwrigh89/Plots/Comparing Plots/reconstructed.png')
 
 
 num_epochs = 4
@@ -364,9 +294,6 @@ if True:
     idx = kmeans.fit_predict(data_waves)
     tsne_results = TSNE().fit_transform(data_waves)
     labels_wave = kmeans.labels_
-    # fin = pd.DataFrame(kmeans)
-
-
 
 
     # add kmeans clustering
