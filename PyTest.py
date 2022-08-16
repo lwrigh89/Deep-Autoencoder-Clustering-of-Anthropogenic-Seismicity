@@ -248,8 +248,8 @@ num_epochs = 4
 diz_loss = {'train_loss':[],'val_loss':[]}
 if new_model:
     for epoch in range(num_epochs):
-        train_loss = train_epoch(model, device, loss_function_BCE, optimizer)
-        val_loss = test_epoch(model, device, loss_function_BCE)
+        train_loss = train_epoch(model, device, loss_function_MSE, optimizer)
+        val_loss = test_epoch(model, device, loss_function_MSE)
         print('\n EPOCH {}/{} \t train loss {} \t val loss {}'.format(epoch + 1, num_epochs, train_loss, val_loss))
         diz_loss['train_loss'].append(train_loss)
         diz_loss['val_loss'].append(val_loss)
